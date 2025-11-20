@@ -42,8 +42,8 @@
 |
 SYM(memset):
 	move.l	4(sp),a0	| dest ptr
-	move.l	8(sp),d0	| value
-	move.l	12(sp),d1	| len
+	move.w	8(sp),d0	| value
+	move.l	10(sp),d1	| len
 	cmp.l	#16,d1
 	blo	.Lbset		| below, byte fills
 	|

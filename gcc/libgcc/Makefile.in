@@ -248,7 +248,7 @@ LIBGCC2_CFLAGS = -O2 $(LIBGCC2_INCLUDES) $(GCC_CFLAGS) $(HOST_LIBGCC2_CFLAGS) \
 		 $(LIBGCC2_DEBUG_CFLAGS) -DIN_LIBGCC2 \
 		 -fbuilding-libgcc -fno-stack-protector \
 		 -ffunction-sections \
-		 $(INHIBIT_LIBC_CFLAGS)
+		 $(INHIBIT_LIBC_CFLAGS) -mpcrel -fpic
 
 # Additional options to use when compiling libgcc2.a.
 # Some targets override this to -isystem include
@@ -296,7 +296,7 @@ override CFLAGS := $(filter-out -fprofile-generate -fprofile-use,$(CFLAGS))
 # will usually contain -g, so for the moment CFLAGS goes first.  We must
 # include CFLAGS - that's where multilib options live.
 INTERNAL_CFLAGS = $(CFLAGS) $(LIBGCC2_CFLAGS) $(HOST_LIBGCC2_CFLAGS) \
-		  $(INCLUDES) @set_have_cc_tls@ @set_use_emutls@
+		  $(INCLUDES) @set_have_cc_tls@ @set_use_emutls@ 
 
 # Options to use when compiling crtbegin/end.
 CRTSTUFF_CFLAGS = -O2 $(GCC_CFLAGS) $(INCLUDES) $(MULTILIB_CFLAGS) -g0 \
@@ -445,9 +445,12 @@ lib2funcs = _muldi3 _negdi2 _lshrdi3 _ashldi3 _ashrdi3 _cmpdi2 _ucmpdi2	   \
 	    _negvsi2 _negvdi2 _ctors _ffssi2 _ffsdi2 _clz _clzsi2 _clzdi2  \
 	    _ctzsi2 _ctzdi2 _popcount_tab _popcountsi2 _popcountdi2	   \
 	    _paritysi2 _paritydi2 _powisf2 _powidf2 _powixf2 _powitf2	   \
-	    _mulhc3 _mulsc3 _muldc3 _mulxc3 _multc3 _divhc3 _divsc3	   \
-	    _divdc3 _divxc3 _divtc3 _bswapsi2 _bswapdi2 _clrsbsi2	   \
+	     _bswapsi2 _bswapdi2 _clrsbsi2	   \
 	    _clrsbdi2
+
+# complex shit we do not support (gcc bugs cause compile failure)
+#lib2funcs += _mulhc3 _mulsc3 _muldc3 _mulxc3 _multc3 _divhc3 _divsc3	   \
+#	    _divdc3 _divxc3 _divtc3
 
 # The floating-point conversion routines that involve a single-word integer.
 # XX stands for the integer mode.

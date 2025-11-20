@@ -207,16 +207,16 @@ if [ $SKIP_THIRDPARTY != true ]; then
 			# via the homebrew package manager
 		if [ "`uname -m`" = arm64 ]; then
 			export CPPFLAGS="-I/opt/homebrew/include"
-			export LDFLAGS="-L/opt/homebrew/lib"
+			export LDFLAGS="-L/opt/homebrew/lib -static"
 		else
 			export CPPFLAGS="-I/usr/local/include"
-			export LDFLAGS="-L/usr/local/lib"
+			export LDFLAGS="-L/usr/local/lib -static"
 		fi
 			# or they could be using MacPorts. Default install
 			# location is /opt/local
 		if [ -d "/opt/local/include" ]; then
 			export CPPFLAGS="$CPPFLAGS -I/opt/local/include"
-			export LDFLAGS="$LDFLAGS -L/opt/local/lib"
+			export LDFLAGS="$LDFLAGS -L/opt/local/lib -static"
 		fi
 	fi
 		
@@ -228,7 +228,7 @@ if [ $SKIP_THIRDPARTY != true ]; then
 		# Build binutils for 68K
 		mkdir -p binutils-build
 		cd binutils-build
-		$SRC/binutils/configure --target=m68k-apple-macos --prefix=$PREFIX --disable-doc
+		$SRC/binutils/configure --target=m68k-none-elf --prefix=$PREFIX --disable-doc
 		make -j$BUILD_JOBS
 		make install
 		cd ..
@@ -237,9 +237,9 @@ if [ $SKIP_THIRDPARTY != true ]; then
 		mkdir -p gcc-build
 		cd gcc-build
 		export target_configargs="--disable-nls --enable-libstdcxx-dual-abi=no --disable-libstdcxx-verbose"
-		$SRC/gcc/configure --target=m68k-apple-macos --prefix=$PREFIX \
-				--enable-languages=c,c++ --with-arch=m68k --with-cpu=m68000 \
-				--disable-libssp MAKEINFO=missing
+		$SRC/gcc/configure --target=m68k-none-elf --prefix=$PREFIX \
+				--enable-languages=c --with-arch=m68k --with-cpu=m68000 \
+				--disable-libssp MAKEINFO=missing --disable-multilib
 		# There seems to be a build failure in parallel builds; ignore any errors and try again without -j8.
 		make -j$BUILD_JOBS || make
 		make install
@@ -249,12 +249,12 @@ if [ $SKIP_THIRDPARTY != true ]; then
 		unset CC
 		unset CXX
 
-		# Move the real linker aside and install symlinks to Elf2Mac
-		# (Elf2Mac is built by cmake below)
-		mv $PREFIX/bin/m68k-apple-macos-ld $PREFIX/bin/m68k-apple-macos-ld.real
-		mv $PREFIX/m68k-apple-macos/bin/ld $PREFIX/m68k-apple-macos/bin/ld.real
-		ln -s Elf2Mac $PREFIX/bin/m68k-apple-macos-ld
-		ln -s ../../bin/Elf2Mac $PREFIX/m68k-apple-macos/bin/ld
+		# # Move the real linker aside and install symlinks to Elf2Mac
+		# # (Elf2Mac is built by cmake below)
+		# mv $PREFIX/bin/m68k-apple-macos-ld $PREFIX/bin/m68k-apple-macos-ld.real
+		# mv $PREFIX/m68k-apple-macos/bin/ld $PREFIX/m68k-apple-macos/bin/ld.real
+		# ln -s Elf2Mac $PREFIX/bin/m68k-apple-macos-ld
+		# ln -s ../../bin/Elf2Mac $PREFIX/m68k-apple-macos/bin/ld
 
 		if [ $CLEAN_AFTER_BUILD != false ]; then
 			rm -rf binutils-build
@@ -300,116 +300,7 @@ if [ $SKIP_THIRDPARTY != true ]; then
 	unset LDFLAGS
 
 
-	# Build hfsutil
-	mkdir -p $PREFIX/lib
-	mkdir -p $PREFIX/share/man/man1
-	mkdir -p hfsutils
-	cd hfsutils
-	$SRC/hfsutils/configure --prefix=$PREFIX --mandir=$PREFIX/share/man --enable-devlibs
-	make
-	make install
-	cd ..
-
-	if [ $CLEAN_AFTER_BUILD != false ]; then
-		rm -rf hfsutils
-	fi
 else # SKIP_THIRDPARTY
     removeInterfacesAndLibraries
 fi # SKIP_THIRDPARTY
 
-##################### Build host-based components: MakePEF, MakeImport, ConvertObj, Rez, ...
-
-echo "Building host-based tools..."
-
-mkdir -p build-host
-cd build-host
-cmake ${SRC} -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_BUILD_TYPE=Debug "${HOST_CMAKE_FLAGS[@]}" ${CMAKE_GENERATOR}
-cd ..
-cmake --build build-host --target install
-
-echo 'subdirs("build-host")' > CTestTestfile.cmake
-
-	# make tools (such as MakeImport and the compilers) available for later commands
-export PATH=$PREFIX/bin:$PATH
-
-##################### Set up Interfaces & Libraries
-
-(cd "${SRC}/multiversal" && ruby make-multiverse.rb -G CIncludes -o "${PREFIX}/multiversal")
-mkdir -p "${PREFIX}/multiversal/libppc"
-cp "${SRC}/ImportLibraries"/*.a "${PREFIX}/multiversal/libppc/"
-setUpInterfacesAndLibraries
-linkInterfacesAndLibraries ${INTERFACES_KIND}
-
-##################### Build target libraries and samples
-
-if [ $BUILD_68K != false ]; then
-	echo "Building target libraries and samples for 68K..."
-	# Build target-based components for 68K
-	mkdir -p build-target
-	cd build-target
-
-	cmake ${SRC} -DCMAKE_TOOLCHAIN_FILE=../build-host/cmake/intree.toolchain.cmake \
-				 -DCMAKE_BUILD_TYPE=Release \
-				 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-				 ${CMAKE_GENERATOR}
-	cd ..
-	cmake --build build-target --target install
-
-	echo 'subdirs("build-target")' >> CTestTestfile.cmake
-fi
-
-if [ $BUILD_PPC != false ]; then
-	echo "Building target libraries and samples for PowerPC..."
-	# Build target-based components for PPC
-	mkdir -p build-target-ppc
-	cd build-target-ppc
-	cmake ${SRC} -DCMAKE_TOOLCHAIN_FILE=../build-host/cmake/intreeppc.toolchain.cmake \
-				 -DCMAKE_BUILD_TYPE=Release \
-				 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-				 ${CMAKE_GENERATOR}
-	cd ..
-	cmake --build build-target-ppc --target install
-
-	echo 'subdirs("build-target-ppc")' >> CTestTestfile.cmake
-fi
-
-if [ $BUILD_CARBON != false ]; then
-	echo "Building target libraries and samples for Carbon..."
-	# Build target-based components for Carbon
-	mkdir -p build-target-carbon
-	cd build-target-carbon
-	cmake ${SRC} -DCMAKE_TOOLCHAIN_FILE=../build-host/cmake/intreecarbon.toolchain.cmake \
-				 -DCMAKE_BUILD_TYPE=Release \
-				 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-				 ${CMAKE_GENERATOR}
-	cd ..
-	cmake --build build-target-carbon --target install
-
-	echo 'subdirs("build-target-carbon")' >> CTestTestfile.cmake
-fi
-
-echo
-echo "==============================================================================="
-echo "Done building Retro68."
-echo "The toolchain has been installed to: ${PREFIX}"
-if [ `which Rez` != $PREFIX/bin/Rez ]; then
-    echo "you might want to add ${PREFIX}/bin to your PATH."
-fi
-case "${INTERFACES_KIND}" in
-    universal)
-        echo "Using Apple's Universal Interfaces."
-        ;;
-    multiversal)
-        echo "Using the open-source Multiversal Interfaces."
-        ;;
-esac
-
-if [ $BUILD_68K != false ]; then
-	echo "You will find 68K sample applications in build-target/Samples/."
-fi
-if [ $BUILD_PPC != false ]; then
-	echo "You will find PowerPC sample applications in build-target-ppc/Samples/."
-fi
-if [ $BUILD_CARBON != false ]; then
-	echo "You will find Carbon sample applications in build-target-carbon/Samples/."
-fi

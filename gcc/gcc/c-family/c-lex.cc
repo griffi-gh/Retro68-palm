@@ -1451,10 +1451,15 @@ lex_charconst (const cpp_token *token)
     }
   /* In C, a character constant has type 'int'.
      In C++ 'char', but multi-char charconsts have type 'int'.  */
-  else if (!c_dialect_cxx () || chars_seen > 1)
-    type = integer_type_node;
-  else
+  else if (c_dialect_cxx ())
     type = char_type_node;
+  else if (chars_seen > 2)
+    type = long_unsigned_type_node;
+  else if (chars_seen > 1)
+    type = unsigned_type_node;
+  else
+    type = integer_type_node;
+
 
   /* Cast to cppchar_signed_t to get correct sign-extension of RESULT
      before possibly widening to HOST_WIDE_INT for build_int_cst.  */

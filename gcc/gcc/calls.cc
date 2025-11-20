@@ -3468,7 +3468,7 @@ expand_call (tree exp, rtx target, int ignore)
 
       if (is_pascal)
 	{
-	  auto pascal_return_mode = TYPE_MODE (TREE_TYPE (funtype));
+	  machine_mode pascal_return_mode = TYPE_MODE (TREE_TYPE (funtype));
 	  poly_uint16 modesize = GET_MODE_SIZE (pascal_return_mode);
 #ifdef PUSH_ROUNDING
 	  modesize = PUSH_ROUNDING (modesize);

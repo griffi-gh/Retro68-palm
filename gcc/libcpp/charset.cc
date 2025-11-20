@@ -1920,7 +1920,7 @@ narrow_str_to_charconst (cpp_reader *pfile, cpp_string str,
 			 enum cpp_ttype type)
 {
   size_t width = CPP_OPTION (pfile, char_precision);
-  size_t max_chars = CPP_OPTION (pfile, int_precision) / width;
+  size_t max_chars = 4;
   size_t mask = width_to_mask (width);
   size_t i;
   cppchar_t result, c;
@@ -1957,10 +1957,8 @@ narrow_str_to_charconst (cpp_reader *pfile, cpp_string str,
   else if (i > 1 && i != 4 && CPP_OPTION (pfile, warn_multichar))
     cpp_warning (pfile, CPP_W_MULTICHAR, "multi-character character constant");
 
-  /* Multichar constants are of type int and therefore signed.  */
+  /* Multichar constants are of type UNSIGNED LONG for PALMOS.  */
   if (i > 1)
-    unsigned_p = 0;
-  else if (type == CPP_UTF8CHAR && !CPP_OPTION (pfile, cplusplus))
     unsigned_p = 1;
   else
     unsigned_p = CPP_OPTION (pfile, unsigned_char);
@@ -1969,8 +1967,10 @@ narrow_str_to_charconst (cpp_reader *pfile, cpp_string str,
      sign- or zero-extend to the full width of cppchar_t.
      For single-character constants, the value is WIDTH bits wide.
      For multi-character constants, the value is INT_PRECISION bits wide.  */
-  if (i > 1)
-    width = CPP_OPTION (pfile, int_precision);
+  if (i > 2)	//3-4 char sequences are long, 2-char seq is short
+    width = 32;
+  else if (i > 1)
+    width = 16;
   if (width < BITS_PER_CPPCHAR_T)
     {
       mask = ((cppchar_t) 1 << width) - 1;

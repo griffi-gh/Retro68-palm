@@ -97,16 +97,18 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  * a little on this and in the PIC case, we use short offset branches and
  * hope that the final object code is within range (which it should be).
  */
+
+
 #ifndef __PIC__
 
 	/* Non PIC (absolute/relocatable) versions */
 
 	.macro PICCALL addr
-	jbsr	\addr
+	bsr	\addr
 	.endm
 
 	.macro PICJUMP addr
-	jmp	\addr
+	bra	\addr
 	.endm
 
 	.macro PICLEA sym, reg

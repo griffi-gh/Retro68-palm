@@ -241,7 +241,8 @@ void sortModules(std::vector<std::shared_ptr<Module>>& modules)
                 continue;
             if(r.second.name2 == -1)
             {
-                if(auto p = nameMap.find(r.second.name1); p != nameMap.end())
+				auto p = nameMap.find(r.second.name1);
+                if(p != nameMap.end())
                 {
                     std::shared_ptr<Module> m1 = p->second;
                     m1->nearrefs.push_back(m);
@@ -531,8 +532,9 @@ int main(int argc, char* argv[])
 
                     assert(flags == 0x90);
                     assert(module);
-
-                    if(auto p = sectionMap.find(name1); p != sectionMap.end())
+					
+					auto p = sectionMap.find(name1);
+                    if(p != sectionMap.end())
                         sectionMap[module->name] = p->second;
                     if(verbose)
                         std::cerr << "ComputedReference to "

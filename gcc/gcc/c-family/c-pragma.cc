@@ -1642,7 +1642,7 @@ init_pragma (void)
   c_register_pragma_with_expansion (0, "message", handle_pragma_message);
 
 #ifdef REGISTER_TARGET_PRAGMAS
-  REGISTER_TARGET_PRAGMAS ();
+//  REGISTER_TARGET_PRAGMAS ();
 #endif
 
   global_sso = default_sso;
